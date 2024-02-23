@@ -2,7 +2,9 @@ from typing import Any
 from transformers import pipeline
 from transformers import BertTokenizer, BertForSequenceClassification
 import openai
-openai.api_key = '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'
+import re
+
+openai.api_key = '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'
 
 def get_datasource(query: str):
     # Load the model
@@ -25,8 +27,7 @@ def get_datasource(query: str):
 
 def get_query(question: str, datastore: dict[str, Any]):
 
-    prompt_text = f"""Only preseto query without any other information
-    Question: {question}
+    prompt_text = f"""Sql query for: Question: {question}
     {datastore}
     """
 
@@ -35,4 +36,13 @@ def get_query(question: str, datastore: dict[str, Any]):
         messages=[{"role": "user", "content": prompt_text}],
     )
 
-    return response.choices[0].message.content
+    result =  response.choices[0].message.content
+    sql_regex = r"sql\n(.*?)\n"
+
+    sql_matches = re.findall(sql_regex, result, re.DOTALL)
+    return sql_matches[0]
+
+
+
+
+
