@@ -1,0 +1,19 @@
+[project]
+name = "DataCraft"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "devsarvesh92", email = "sarveshdev92@gmail.com"},
+]
+dependencies = [
+    "streamlit>=1.31.1",
+    "torch>=2.2.1",
+    "transformers>=4.38.1",
+]
+requires-python = "==3.11.*"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[tool.pdm]
+distribution = false
