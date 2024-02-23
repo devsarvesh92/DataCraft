@@ -3,10 +3,11 @@ import logging
 import pandas as pd
 import streamlit as st
 
+from src.model.model import get_datasource
+
 
 def process_user_query(input_string: str):
-    logging.log(logging.INFO, f"Processing user query: {input_string}")
-    return "I am a bot"
+    return get_datasource(query=input_string)
 
 
 def identify_schema():

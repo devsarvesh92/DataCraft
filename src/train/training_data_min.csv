@@ -1,11 +1,3 @@
 query,data_source
 average spend by users last month,"transactions, accounts"
-average spend by users this year,"transactions, accounts"
-monthly average spend by users,"transactions, accounts"
-yearly average spend by users,"transactions, accounts"
-total average spend by users in Q1,"transactions, accounts"
-total average spend by users in Q2,"transactions, accounts"
-total average spend by users in Q3,"transactions, accounts"
-total average spend by users in Q4,"transactions, accounts"
-total number of late payments in Q2,payments
 number of late payments last month,payments

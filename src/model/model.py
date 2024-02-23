@@ -1,24 +1,21 @@
 from transformers import pipeline
 from transformers import BertTokenizer, BertForSequenceClassification
 
-# Load the model
-model = BertForSequenceClassification.from_pretrained("my_model_directory")
-tokenizer = BertTokenizer.from_pretrained("my_model_directory")
+def get_datasource(query:str):
+    # Load the model
+    model = BertForSequenceClassification.from_pretrained("data_craft_model")
+    tokenizer = BertTokenizer.from_pretrained("data_craft_model")
 
-# Initialize the pipeline
-classify = pipeline("text-classification", model=model, tokenizer=tokenizer)
+    # Initialize the pipeline
+    classify = pipeline("text-classification", model=model, tokenizer=tokenizer)
 
-# Predict
-query = "total revenue last year"
-predictions = classify(query)
-
-# data source
-
-# Query builder
-# total revenue last year -> sales {}
+    # Predict
+    predictions = classify(query)
 
 
+    label_mapping = {
+        "LABEL_0": "transactions, accounts",
+        "LABEL_1": "payments, accounts"
+    }
 
-# predicted_label = id_to_label[predictions[0]['label'].split('_')[-1]]
-
-print(f"Predicted data source: {predictions}")
+    return label_mapping[predictions[0]['label']]
