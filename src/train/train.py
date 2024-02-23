@@ -1,54 +1,82 @@
-from transformers import BertTokenizer
 import pandas as pd
-from transformers import BertForSequenceClassification
-
-from torch.utils.data import DataLoader, TensorDataset
-from transformers import AdamW
-
-from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from transformers import BertTokenizer
+from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 import torch
 
+# Load the dataset
+df = pd.read_csv("src/train/training_data_balanced.csv")
 
-# Load your dataset
-df = pd.read_csv("src/train/training_data_min.csv")
+# Split the dataset
+train_texts, val_texts, train_labels, val_labels = train_test_split(df['query'].tolist(), df['label'].tolist(), test_size=.3)
 
-# Initialize the tokenizerb
-tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+# Initialize the tokenizer
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
-# Tokenize and encode sequences in the dataset
-tokens = tokenizer(
-    df["query"].tolist(), padding=True, truncation=True, return_tensors="pt"
-)
-
-label_encoder = LabelEncoder()
-df['encoded_data_source'] = label_encoder.fit_transform(df['data_source'])
-labels = torch.tensor(df['encoded_data_source'].values)
+label_dict = {
+    "transactions, accounts": 0,
+    "payments, accounts": 1
+}
 
 
-dataset = TensorDataset(tokens['input_ids'], tokens['attention_mask'], labels)
-batch_size = 100
-train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+# Tokenize the text
+train_encodings = tokenizer(train_texts, truncation=True, padding=True, max_length=128)
+val_encodings = tokenizer(val_texts, truncation=True, padding=True, max_length=128)
+
+# Convert to torch tensors
+train_seq = torch.tensor(train_encodings['input_ids'])
+train_mask = torch.tensor(train_encodings['attention_mask'])
+train_y = torch.tensor([label_dict[label] for label in train_labels])  # Ensure label_dict maps labels to integers
+
+val_seq = torch.tensor(val_encodings['input_ids'])
+val_mask = torch.tensor(val_encodings['attention_mask'])
+val_y = torch.tensor([label_dict[label] for label in val_labels])
+
+# Create DataLoaders
+batch_size = 32
+train_data = TensorDataset(train_seq, train_mask, train_y)
+train_sampler = RandomSampler(train_data)
+train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=batch_size)
+
+val_data = TensorDataset(val_seq, val_mask, val_y)
+val_sampler = SequentialSampler(val_data)
+val_dataloader = DataLoader(val_data, sampler=val_sampler, batch_size=batch_size)
+
+from transformers import BertForSequenceClassification
+
+# Load the BERT model
+model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=len(label_dict))
+
+# Specify the device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
 
 
-num_labels = len(df['data_source'].unique())  # Adjust based on your dataset
-model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=num_labels)
+from transformers import AdamW, get_linear_schedule_with_warmup
+from tqdm import tqdm
 
-# Initialize optimizer
-optimizer = AdamW(model.parameters(), lr=5e-5)
+# Optimizer and scheduler
+optimizer = AdamW(model.parameters(), lr=2e-5, correct_bias=False)
+scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=len(train_dataloader) * 10)
 
-for epoch in range(4):  # Loop over the dataset multiple times
-    for batch in train_loader:
-        # Zero the parameter gradients
-        optimizer.zero_grad()
-
-        # Forward + backward + optimize
-        outputs = model(batch[0], attention_mask=batch[1], labels=batch[2])
-        loss = outputs.loss
+# Training loop
+epochs = 10
+for epoch in range(epochs):
+    model.train()
+    total_loss = 0
+    for batch in tqdm(train_dataloader):
+        batch = [r.to(device) for r in batch]
+        inputs = {'input_ids': batch[0], 'attention_mask': batch[1], 'labels': batch[2]}
+        model.zero_grad()
+        outputs = model(**inputs)
+        loss = outputs[0]
+        total_loss += loss.item()
         loss.backward()
         optimizer.step()
+        scheduler.step()
+    print(f"Epoch {epoch}, Loss: {total_loss / len(train_dataloader)}")
 
-print("Finished Training")
+    # Validation step...
+model.save_pretrained("./data_craft_model")
+tokenizer.save_pretrained("./data_craft_model")
 
-
-model.save_pretrained("data_craft_model")
-tokenizer.save_pretrained("data_craft_model")
