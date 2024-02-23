@@ -21,16 +21,20 @@ def process_response(result_df: pd.DataFrame) -> pd.DataFrame | str:
 def process_user_query(input_string: str) -> pd.DataFrame:
     data_sources = get_datasource(query=input_string)
     kb = {
-        "payments": ["amount", "account_id", "tenant"],
-        "accounts": ["account_id"],
-        "transactions": ["amount", "account_id", "tenant"],
+        "payments": ["payment_id","report_date","amount","payment_type", "account_id", "tenant"],
+        "accounts": ["account_id","tenant"],
+        "transactions": ["amount", "account_id", "tenant","report_date", "type"],
     }
     data_store = [
         {"database": f"{db.strip()}_db", "table": db.strip(), "columns": kb[db.strip()]}
         for db in data_sources.split(",")
     ]
+
+    query_string=get_query(datastore=data_store, question=input_string)
+    st.write(query_string)
+
     return execute_query_on_athena(
-        query_string=get_query(datastore=data_store, question=input_string),
+        query_string=query_string,
         database_name="payments_db",
     )
 

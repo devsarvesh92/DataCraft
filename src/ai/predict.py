@@ -4,7 +4,7 @@ from transformers import BertTokenizer, BertForSequenceClassification
 import openai
 import re
 
-openai.api_key = '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'
+openai.api_key = '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'
 
 def get_datasource(query: str):
     # Load the model
@@ -27,7 +27,7 @@ def get_datasource(query: str):
 
 def get_query(question: str, datastore: dict[str, Any]):
 
-    prompt_text = f"""Sql query for: Question: {question}
+    prompt_text = f"""Presto query for: Question: {question}
     {datastore}
     """
 
@@ -35,13 +35,16 @@ def get_query(question: str, datastore: dict[str, Any]):
         model="gpt-4",  # Adjust based on availability and your requirements
         messages=[{"role": "user", "content": prompt_text}],
     )
-
     result =  response.choices[0].message.content
-    sql_regex = r"sql\n(.*?)\n"
 
-    sql_matches = re.findall(sql_regex, result, re.DOTALL)
-    return sql_matches[0]
+    parts = result.lower().split("```")
 
+    if len(parts) > 1:
+        query = parts[1].replace("\n", " ").replace("sql", " ")
+    else:
+        # for simple queries
+        query = parts[0].replace("\n", " ").replace("sql", " ")
+    return query
 
 
 
