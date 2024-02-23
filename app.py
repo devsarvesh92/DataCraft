@@ -106,29 +106,31 @@ def execute_query_on_athena(query_string: str, database_name: str) -> pd.DataFra
 st.set_page_config(page_title="DataCraft", layout="wide")
 st.title("DataCraft")
 
-if "user_messages" not in st.session_state:
-    st.session_state["user_messages"] = []
+if "messages" not in st.session_state:
+    st.session_state["messages"] = [{}]
 
-if "bot_messages" not in st.session_state:
-    st.session_state["bot_messages"] = []
-
-user_input = st.chat_input(placeholder="How can I help you?")
+user_input = st.chat_input(placeholder='How can I help you?')
 
 if user_input:
-    st.session_state["user_messages"].append(user_input)
+    st.session_state['messages'].append({'user': user_input})
+    st.session_state['messages'].append({'bot': "thinking..."})
 
-    st.session_state["bot_messages"].append("thinking...")
+    for message in st.session_state.messages:
+        match message:
+            case {'bot': _}:
+                msg = message.get("bot")
+                with st.chat_message("bot"):
+                    if isinstance(msg, dict):
+                        st.write(pd.DataFrame().from_dict(msg))
+                    else:
+                        st.write(msg)
+            case {'user': _}:
+                with st.chat_message("user"):
+                    st.write(message.get("user"))
 
-    for user_message, bot_message in zip(
-        st.session_state.user_messages, st.session_state.bot_messages
-    ):
-        with st.chat_message("user"):
-            st.write(user_message)
-
-        with st.chat_message("bot"):
-            st.write(bot_message)
-
+    # processing user_input
     bot_response = process_user_query(input_string=user_input)
-
+    st.session_state['messages'].append({'bot': bot_response.to_dict()})
     with st.chat_message("bot"):
         st.write(bot_response)
+
