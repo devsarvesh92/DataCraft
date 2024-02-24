@@ -34,3 +34,4 @@ group tranasctions by year
 group payments made by rocket tenant by year
 
 
+group transactions amount by year for rocket tenant
