@@ -3,7 +3,7 @@ from transformers import pipeline
 from transformers import BertTokenizer, BertForSequenceClassification
 import openai
 
-openai.api_key = 'TO-BE-ADDED'
+openai.api_key = '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'
 
 def get_datasource(query: str):
     # Load the model
