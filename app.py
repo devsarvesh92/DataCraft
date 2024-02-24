@@ -16,7 +16,7 @@ keywords = ['hi', 'hello', 'hey', 'howdy', 'ok', 'fine', 'greetings', 'good morn
 
 def process_response(result_df: pd.DataFrame) -> pd.DataFrame | str:
     if result_df.empty:
-        return "No data found"
+        return "There is no data for your query."
     else:
         return result_df
 
