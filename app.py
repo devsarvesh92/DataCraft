@@ -16,12 +16,12 @@ keywords = ['hi', 'hello', 'hey', 'howdy', 'ok', 'fine', 'greetings', 'good morn
 
 def process_response(result_df: pd.DataFrame) -> pd.DataFrame | str:
     if result_df.empty:
-        return "No data found for the given query"
+        return "No data found"
     else:
         return result_df
 
 
-def process_user_query(input_string: str) -> pd.DataFrame:
+def process_user_query(input_string: str) -> pd.DataFrame | str:
     if input_string.lower() in keywords:
         st.session_state["messages"].pop(-1)
         raise Exception()
@@ -150,7 +150,10 @@ if user_input:
     # processing user_input
     try:
         bot_response = process_user_query(input_string=user_input)
-        st.session_state['messages'].append({'bot': bot_response.to_dict()})
+        if isinstance(bot_response, pd.DataFrame):
+            st.session_state['messages'].append({'bot': bot_response.to_dict()})
+        else:
+            st.session_state['messages'].append({'bot': bot_response})
     except Exception as e:
         bot_response = "Apologies, I didn't get you question. Can you please ask me question in different manner ?"
         st.session_state["messages"].append({"bot": bot_response})
