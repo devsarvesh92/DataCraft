@@ -38,7 +38,7 @@ def process_user_query(input_string: str) -> pd.DataFrame:
     ]
 
     query_string = get_query(datastore=data_store, question=input_string)
-    # st.write(query_string)
+    st.write(query_string)
 
     df = execute_query_on_athena(
         query_string=query_string,
@@ -124,7 +124,7 @@ if "messages" not in st.session_state:
     st.session_state["messages"] = [{}]
 
 with st.chat_message("bot"):
-    st.write("I am DataCraft bot. I can help you to get some data for payments, transactions and accounts.")
+    st.write("I am DataCraft bot.")
 
 user_input = st.chat_input(placeholder='How can I help you?')
 
