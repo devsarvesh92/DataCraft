@@ -38,7 +38,7 @@ def process_user_query(input_string: str) -> pd.DataFrame | str:
     ]
 
     query_string = get_query(datastore=data_store, question=input_string)
-    st.write(query_string)
+    # st.write(query_string)
 
     df = execute_query_on_athena(
         query_string=query_string,
