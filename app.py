@@ -10,6 +10,9 @@ import streamlit as st
 
 from src.ai.predict import get_datasource, get_query
 
+keywords = ['hi', 'hello', 'hey', 'howdy', 'ok', 'fine', 'greetings', 'good morning', 'good afternoon', 'good evening',
+            'bye']
+
 
 def process_response(result_df: pd.DataFrame) -> pd.DataFrame | str:
     if result_df.empty:
@@ -19,32 +22,34 @@ def process_response(result_df: pd.DataFrame) -> pd.DataFrame | str:
 
 
 def process_user_query(input_string: str) -> pd.DataFrame:
-    try:
-        data_sources = get_datasource(query=input_string)
-        kb = {
-            "payments": ["payment_id","report_date","amount","payment_type", "account_id", "tenant"],
-            "accounts": ["account_id","tenant"],
-            "transactions": ["amount", "account_id", "tenant","report_date", "type"],
-        }
-        data_store = [
-            {"database": f"{db.strip()}_db", "table": db.strip(), "columns": kb[db.strip()]}
-            for db in data_sources.split(",")
-        ]
+    if input_string.lower() in keywords:
+        st.session_state["messages"].pop(-1)
+        raise Exception()
 
-        query_string=get_query(datastore=data_store, question=input_string)
-        st.write(query_string)
+    data_sources = get_datasource(query=input_string)
+    kb = {
+        "payments": ["payment_id", "report_date", "amount", "payment_type", "account_id", "tenant"],
+        "accounts": ["account_id", "tenant", 'city', 'state'],
+        "transactions": ["amount", "account_id", "tenant", "report_date", "type"],
+    }
+    data_store = [
+        {"database": f"{db.strip()}_db", "table": db.strip(), "columns": kb[db.strip()]}
+        for db in data_sources.split(",")
+    ]
 
-        return execute_query_on_athena(
-            query_string=query_string,
-            database_name="payments_db",
-        )
-    except Exception as e:
-        st.session_state["messages"].append({"bot":"I don't know"})
+    query_string = get_query(datastore=data_store, question=input_string)
+    # st.write(query_string)
 
+    df = execute_query_on_athena(
+        query_string=query_string,
+        database_name="payments_db",
+    )
+
+    return process_response(df)
 
 
 def stream_content(
-    *, s3_client: "botocore.client.S3", bucket: str, key: str
+        *, s3_client: "botocore.client.S3", bucket: str, key: str
 ) -> StreamingBody:
     return s3_client.get_object(Bucket=bucket, Key=key)["Body"]
 
@@ -106,15 +111,20 @@ def execute_query_on_athena(query_string: str, database_name: str) -> pd.DataFra
             s3_bucket="test-query-ouput-athena",
         )
     except Exception as e:
-        st.session_state["messages"].append({"bot":"Sorry, can you please try again ?"})
+        st.session_state["messages"].append({"bot": "Sorry, can you please try again ?"})
     return df
 
+
+# main code starts here
 
 st.set_page_config(page_title="DataCraft", layout="wide")
 st.title("DataCraft")
 
 if "messages" not in st.session_state:
     st.session_state["messages"] = [{}]
+
+with st.chat_message("bot"):
+    st.write("I am DataCraft bot. I can help you to get some data for payments, transactions and accounts.")
 
 user_input = st.chat_input(placeholder='How can I help you?')
 
@@ -135,9 +145,14 @@ if user_input:
                 with st.chat_message("user"):
                     st.write(message.get("user"))
 
+    st.session_state["messages"].pop(-1)
+
     # processing user_input
-    bot_response = process_user_query(input_string=user_input)
-    st.session_state['messages'].append({'bot': bot_response.to_dict()})
+    try:
+        bot_response = process_user_query(input_string=user_input)
+        st.session_state['messages'].append({'bot': bot_response.to_dict()})
+    except Exception as e:
+        bot_response = "Apologies, I didn't get you question. Can you please ask me question in different manner ?"
+        st.session_state["messages"].append({"bot": bot_response})
     with st.chat_message("bot"):
         st.write(bot_response)
-
