@@ -2,9 +2,8 @@ from typing import Any
 from transformers import pipeline
 from transformers import BertTokenizer, BertForSequenceClassification
 import openai
-import re
 
-openai.api_key = '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'
+openai.api_key = 'TO-BE-ADDED'
 
 def get_datasource(query: str):
     # Load the model
@@ -29,6 +28,11 @@ def get_query(question: str, datastore: dict[str, Any]):
 
     prompt_text = f"""Presto query for: Question: {question}
     {datastore}
+    hint: 
+    Tenant ID Clarity: Ensure that the API call does not lead to ambiguity regarding the tenant ID. This means explicitly specifying the tenant ID in a manner that prevents confusion or errors related to tenant identification.
+    Use of extract Function for Monthly Aggregation: If the request involves aggregation based on the month, incorporate the extract function to accurately extract the month from date fields. This is crucial for performing precise monthly aggregation tasks.
+    Consistent Use of extract in SELECT and GROUP BY: In cases where the extract function is used in the SELECT clause for extracting specific date parts (like month), it is essential to also use extract in the GROUP BY clause. This ensures that the data aggregation aligns with the selected date part and maintains consistency in the query's logic.
+    If there is a check word for payments use it as a type
     """
 
     response = openai.chat.completions.create(
